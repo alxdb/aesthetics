@@ -1,0 +1,8 @@
+[package]
+name = "aesthetic"
+version = "0.1.0"
+authors = ["Alexander Davidson Bryan <alex.davidsonbryan@gmail.com>"]
+
+[dependencies]
+glium = "0.22.0"
+nalgebra-glm = "0.1.3"
