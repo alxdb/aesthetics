@@ -1,16 +1,15 @@
 extern crate glium;
+extern crate itertools;
 extern crate nalgebra_glm;
 
+mod renderer;
 mod window;
 
-use glium::implement_vertex;
 use glium::Surface;
 
-#[derive(Copy, Clone)]
-struct BasicVertex {
-    pos: [f32; 3],
-}
-implement_vertex!(BasicVertex, pos);
+use renderer::object;
+use renderer::shader;
+use renderer::shader::Shader;
 
 fn main() {
     // Diplay Setup
@@ -23,28 +22,20 @@ fn main() {
     let mut window = window::Window::new(window_builder, context_builder);
 
     // Shader Compilation
-    let shader = glium::program::Program::from_source(
-        window.display_ref(),
-        include_str!("glsl/basic.vert"),
-        include_str!("glsl/basic.frag"),
-        None,
-    ).unwrap();
+    let basic_shader = shader::BasicShader::new(&window);
 
     // Buffer Allocation
-    let vertex_buffer = glium::vertex::VertexBuffer::dynamic(
-        window.display_ref(),
-        &vec![
-            BasicVertex {
-                pos: [-0.5, -0.5, 0.0],
-            },
-            BasicVertex {
-                pos: [0.5, -0.5, 0.0],
-            },
-            BasicVertex {
-                pos: [0.0, 0.5, 0.0],
-            },
-        ],
-    ).unwrap();
+    let sphere = object::Sphere::new(1.0, 32);
+
+    let (index_buffer, vertex_buffer) = {
+        let vertices = shader::Mesh::create_vertices(&basic_shader, &sphere);
+        let indices = object::Mesh::get_mesh(&sphere).get_indices();
+        (
+            glium::index::IndexBuffer::immutable(window.display_ref(), indices.1, indices.0)
+                .unwrap(),
+            glium::vertex::VertexBuffer::dynamic(window.display_ref(), &vertices).unwrap(),
+        )
+    };
 
     // Draw Parameters
     let params = glium::DrawParameters {
@@ -74,8 +65,8 @@ fn main() {
         frame
             .draw(
                 &vertex_buffer,
-                &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                &shader,
+                &index_buffer,
+                basic_shader.get_program(),
                 &glium::uniforms::EmptyUniforms,
                 &params,
             ).unwrap();
