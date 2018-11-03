@@ -1,6 +1,8 @@
-use super::object;
+use super::*;
+
 use glium::implement_vertex;
 use glium::program;
+use object;
 
 #[derive(Copy, Clone, Debug)]
 pub struct BasicVertex {
@@ -12,10 +14,10 @@ pub struct BasicShader {
     program: program::Program,
 }
 
-impl super::Shader for BasicShader {
-    fn new(window: &::window::Window) -> Self {
+impl Shader<BasicVertex> for BasicShader {
+    fn new(display: &glium::Display) -> Self {
         let program = glium::program::Program::from_source(
-            window.display_ref(),
+            display,
             include_str!("glsl/basic.vert"),
             include_str!("glsl/basic.frag"),
             None,
@@ -26,15 +28,8 @@ impl super::Shader for BasicShader {
     fn get_program(&self) -> &program::Program {
         &self.program
     }
-}
 
-impl<I, O> super::Mesh<I, BasicVertex, O> for BasicShader
-where
-    I: glium::index::Index,
-    O: object::Mesh<I>,
-{
-    fn create_vertices(&self, object: &O) -> Vec<BasicVertex> {
-        let mesh = object.get_mesh();
+    fn create_vertices(&self, mesh: &object::MeshData) -> Vec<BasicVertex> {
         let mut vertices = Vec::new();
         for point in mesh.get_points() {
             vertices.push(BasicVertex {

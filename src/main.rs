@@ -1,11 +1,10 @@
+extern crate generational_arena;
 extern crate glium;
 extern crate itertools;
 extern crate nalgebra_glm;
 
 mod renderer;
 mod window;
-
-use glium::Surface;
 
 use renderer::object;
 use renderer::shader;
@@ -19,23 +18,15 @@ fn main() {
     let context_builder = glium::glutin::ContextBuilder::new()
         .with_multisampling(8)
         .with_vsync(true);
-    let mut window = window::Window::new(window_builder, context_builder);
+    let (mut ev_loop, display) = window::new_window(window_builder, context_builder);
 
     // Shader Compilation
-    let basic_shader = shader::BasicShader::new(&window);
+    let basic_shader = shader::BasicShader::new(&display);
+    let mut basic_render = renderer::BasicRenderer::new(basic_shader, &display);
 
     // Buffer Allocation
-    let sphere = object::Sphere::new(1.0, 32);
-
-    let (index_buffer, vertex_buffer) = {
-        let vertices = shader::Mesh::create_vertices(&basic_shader, &sphere);
-        let indices = object::Mesh::get_mesh(&sphere).get_indices();
-        (
-            glium::index::IndexBuffer::immutable(window.display_ref(), indices.1, indices.0)
-                .unwrap(),
-            glium::vertex::VertexBuffer::dynamic(window.display_ref(), &vertices).unwrap(),
-        )
-    };
+    let sphere = basic_render.add_object(object::Sphere::new(0.5, 10));
+    let cube = basic_render.add_object(object::Cube::new((0.6, 0.6, 0.6)));
 
     // Draw Parameters
     let params = glium::DrawParameters {
@@ -49,7 +40,7 @@ fn main() {
 
     'main: loop {
         // Input Handle
-        for ev in window.get_events().iter() {
+        for ev in window::get_events(&mut ev_loop).iter() {
             match ev {
                 glium::glutin::Event::WindowEvent {
                     event: glium::glutin::WindowEvent::CloseRequested,
@@ -60,16 +51,6 @@ fn main() {
         }
 
         // Rendering
-        let mut frame = window.display_ref().draw();
-        frame.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
-        frame
-            .draw(
-                &vertex_buffer,
-                &index_buffer,
-                basic_shader.get_program(),
-                &glium::uniforms::EmptyUniforms,
-                &params,
-            ).unwrap();
-        frame.finish().unwrap();
+        basic_render.draw((0.0, 0.0, 0.0, 1.0), &params).unwrap();
     }
 }

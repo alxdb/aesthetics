@@ -2,18 +2,21 @@ pub mod object;
 pub mod shader;
 
 mod basic;
+pub use self::basic::BasicRenderer;
 
-trait Renderer<F>
+struct Buffers<V>
 where
-    F: glium::Surface,
+    V: glium::Vertex,
 {
-    fn draw(&F) -> Result<(), glium::DrawError>;
+    pub vertex: glium::VertexBuffer<V>,
+    pub index: glium::IndexBuffer<object::IndexType>,
 }
 
-// trait MeshShader<V, I>
-// where
-//     V: glium::Vertex,
-//     I: glium::index::Index,
-// {
-//     fn add_object
-// }
+trait Renderer<'a, V, S>
+where
+    V: glium::Vertex,
+    S: shader::Shader<V>,
+{
+    fn new(shader: S, display: &'a glium::Display) -> Self;
+    fn draw(&self, clear_colour: (f32, f32, f32, f32), draw_params: &glium::DrawParameters);
+}

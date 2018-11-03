@@ -4,16 +4,11 @@ use glium;
 pub mod basic;
 pub use self::basic::BasicShader;
 
-pub trait Shader {
-    fn new(window: &::window::Window) -> Self;
-    fn get_program(&self) -> &glium::program::Program;
-}
-
-pub trait Mesh<I, V, O>: Shader
+pub trait Shader<V>
 where
-    I: glium::index::Index,
     V: glium::Vertex,
-    O: object::Mesh<I>,
 {
-    fn create_vertices(&self, &O) -> Vec<V>;
+    fn new(display: &glium::Display) -> Self;
+    fn get_program(&self) -> &glium::program::Program;
+    fn create_vertices(&self, mesh: &object::MeshData) -> Vec<V>;
 }

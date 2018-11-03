@@ -5,7 +5,7 @@ use nalgebra_glm as glm;
 use std::f32::consts;
 
 pub struct Sphere {
-    mesh: super::MeshData<u16>,
+    mesh: MeshData,
 }
 
 impl Sphere {
@@ -17,9 +17,10 @@ impl Sphere {
             let point = glm::vec3(pol.sin() * azi.cos(), pol.sin() * azi.sin(), pol.cos());
             points.push(point * radius);
         }
+
         let mut indices = Vec::new();
         for (u, v) in iproduct!(0..segments, 0..segments) {
-            let mut side: [u16; 4] = [0; 4];
+            let mut side: [IndexType; 4] = [0; 4];
             for ((i, j), s) in iproduct!(0..=1, 0..=1).zip(side.iter_mut()) {
                 *s = (u + i) + segments * (v + j);
             }
@@ -38,10 +39,8 @@ impl Sphere {
     }
 }
 
-impl Object for Sphere {}
-
-impl Mesh<u16> for Sphere {
-    fn get_mesh(&self) -> &MeshData<u16> {
+impl MeshObject for Sphere {
+    fn ref_mesh(&self) -> &MeshData {
         &self.mesh
     }
 }

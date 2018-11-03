@@ -5,7 +5,7 @@ use nalgebra_glm as glm;
 
 #[derive(Debug)]
 pub struct Cube {
-    mesh: MeshData<u8>,
+    mesh: MeshData,
 }
 
 impl Cube {
@@ -17,14 +17,14 @@ impl Cube {
         }
         let mut indices = Vec::new();
         // Faces
-        let mut sides: [[[u8; 4]; 2]; 3] = [[[0; 4]; 2]; 3];
+        let mut sides: [[[IndexType; 4]; 2]; 3] = [[[0; 4]; 2]; 3];
         for (dim, side_pair) in sides.iter_mut().enumerate() {
             for (i, side) in side_pair.iter_mut().enumerate() {
                 for ((j, k), s) in iproduct!(0..=1, 0..=1).zip(side.iter_mut()) {
                     match dim {
-                        0 => *s = i as u8 + j * 2 + k * 4,
-                        1 => *s = k + i as u8 * 2 + j * 4,
-                        2 => *s = j + k * 2 + i as u8 * 4,
+                        0 => *s = i as IndexType + j * 2 + k * 4,
+                        1 => *s = k + i as IndexType * 2 + j * 4,
+                        2 => *s = j + k * 2 + i as IndexType * 4,
                         _ => panic!("oob"),
                     }
                 }
@@ -49,10 +49,8 @@ impl Cube {
     }
 }
 
-impl Object for Cube {}
-
-impl Mesh<u8> for Cube {
-    fn get_mesh(&self) -> &MeshData<u8> {
+impl MeshObject for Cube {
+    fn ref_mesh(&self) -> &MeshData {
         &self.mesh
     }
 }
