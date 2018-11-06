@@ -12,12 +12,12 @@ where
     meshes: Arena<(object::MeshData, Buffers<V>)>,
 }
 
-impl<'a, V, S> BasicRenderer<'a, V, S>
+impl<'a, V, S> Renderer<'a, V, S> for BasicRenderer<'a, V, S>
 where
     V: glium::Vertex,
     S: shader::Shader<V>,
 {
-    pub fn new(shader: S, display: &'a glium::Display) -> Self {
+    fn new(shader: S, display: &'a glium::Display) -> Self {
         BasicRenderer {
             shader,
             display,
@@ -25,6 +25,33 @@ where
         }
     }
 
+    fn draw(
+        &self,
+        clear_colour: (f32, f32, f32, f32),
+        draw_params: &glium::DrawParameters,
+    ) -> Result<(), glium::SwapBuffersError> {
+        use glium::Surface;
+        let mut frame = self.display.draw();
+        frame.clear_color_and_depth(clear_colour, 1.0);
+        for (_, mesh) in self.meshes.iter() {
+            frame
+                .draw(
+                    &mesh.1.vertex,
+                    &mesh.1.index,
+                    self.shader.get_program(),
+                    &glium::uniforms::EmptyUniforms,
+                    &draw_params,
+                ).unwrap();
+        }
+        frame.finish()
+    }
+}
+
+impl<'a, V, S> BasicRenderer<'a, V, S>
+where
+    V: glium::Vertex,
+    S: shader::Shader<V>,
+{
     pub fn add_object<O>(&mut self, object: O) -> generational_arena::Index
     where
         O: object::MeshObject,
@@ -60,26 +87,5 @@ where
         mesh.0.update_points(update_function);
         mesh.1.vertex.write(&self.shader.create_vertices(&mesh.0));
         Ok(())
-    }
-
-    pub fn draw(
-        &self,
-        clear_colour: (f32, f32, f32, f32),
-        draw_params: &glium::DrawParameters,
-    ) -> Result<(), glium::SwapBuffersError> {
-        use glium::Surface;
-        let mut frame = self.display.draw();
-        frame.clear_color_and_depth(clear_colour, 1.0);
-        for (_, mesh) in self.meshes.iter() {
-            frame
-                .draw(
-                    &mesh.1.vertex,
-                    &mesh.1.index,
-                    self.shader.get_program(),
-                    &glium::uniforms::EmptyUniforms,
-                    &draw_params,
-                ).unwrap();
-        }
-        frame.finish()
     }
 }

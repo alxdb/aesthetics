@@ -22,11 +22,12 @@ fn main() {
 
     // Shader Compilation
     let basic_shader = shader::BasicShader::new(&display);
+    use renderer::Renderer;
     let mut basic_render = renderer::BasicRenderer::new(basic_shader, &display);
 
     // Buffer Allocation
-    let sphere = basic_render.add_object(object::Sphere::new(0.5, 10));
-    let cube = basic_render.add_object(object::Cube::new((0.6, 0.6, 0.6)));
+    let _sphere = basic_render.add_object(object::Sphere::new(0.5, 10));
+    let _cube = basic_render.add_object(object::Cube::new((0.6, 0.6, 0.6)));
 
     // Draw Parameters
     let params = glium::DrawParameters {
