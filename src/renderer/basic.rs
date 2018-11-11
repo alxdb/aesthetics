@@ -2,6 +2,14 @@ use super::*;
 use generational_arena::Arena;
 use nalgebra_glm as glm;
 
+struct BasicObject<V>
+where
+    V: glium::Vertex,
+{
+    mesh: object::MeshData,
+    buffers: Buffers<V>,
+}
+
 pub struct BasicRenderer<'a, V, S>
 where
     V: glium::Vertex,
@@ -9,7 +17,7 @@ where
 {
     shader: S,
     display: &'a glium::Display,
-    meshes: Arena<(object::MeshData, Buffers<V>)>,
+    objects: Arena<BasicObject<V>>,
 }
 
 impl<'a, V, S> Renderer<'a, V, S> for BasicRenderer<'a, V, S>
@@ -17,11 +25,11 @@ where
     V: glium::Vertex,
     S: shader::Shader<V>,
 {
-    fn new(shader: S, display: &'a glium::Display) -> Self {
+    fn new(display: &'a glium::Display) -> Self {
         BasicRenderer {
-            shader,
+            shader: S::new(display),
             display,
-            meshes: Arena::new(),
+            objects: Arena::new(),
         }
     }
 
@@ -33,11 +41,11 @@ where
         use glium::Surface;
         let mut frame = self.display.draw();
         frame.clear_color_and_depth(clear_colour, 1.0);
-        for (_, mesh) in self.meshes.iter() {
+        for (_, obj) in self.objects.iter() {
             frame
                 .draw(
-                    &mesh.1.vertex,
-                    &mesh.1.index,
+                    &obj.buffers.vertex,
+                    &obj.buffers.index,
                     self.shader.get_program(),
                     &glium::uniforms::EmptyUniforms,
                     &draw_params,
@@ -63,13 +71,15 @@ where
             self.display,
             &self.shader.create_vertices(object.ref_mesh()),
         ).unwrap();
-        self.meshes.insert((
-            object.ref_mesh().clone(),
-            Buffers {
-                vertex: vertex_buffer,
-                index: index_buffer,
+        self.objects.insert(
+            BasicObject {
+                mesh: object.ref_mesh().clone(),
+                buffers: Buffers {
+                    vertex: vertex_buffer,
+                    index: index_buffer,
+                },
             },
-        ))
+        )
     }
 
     pub fn update_object<F>(
@@ -80,12 +90,12 @@ where
     where
         F: Fn(&glm::Vec3) -> glm::Vec3,
     {
-        let mesh = match self.meshes.get_mut(index) {
+        let obj = match self.objects.get_mut(index) {
             Some(m) => m,
             None => return Err("object not found"),
         };
-        mesh.0.update_points(update_function);
-        mesh.1.vertex.write(&self.shader.create_vertices(&mesh.0));
+        obj.mesh.update_points(update_function);
+        obj.buffers.vertex.write(&self.shader.create_vertices(&obj.mesh));
         Ok(())
     }
 }

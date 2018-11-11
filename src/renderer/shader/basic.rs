@@ -1,5 +1,4 @@
 use super::*;
-
 use glium::implement_vertex;
 use glium::program;
 use object;
@@ -18,8 +17,8 @@ impl Shader<BasicVertex> for BasicShader {
     fn new(display: &glium::Display) -> Self {
         let program = glium::program::Program::from_source(
             display,
-            include_str!("glsl/basic.vert"),
-            include_str!("glsl/basic.frag"),
+            include_str!("glsl/mesh.vert"),
+            include_str!("glsl/mesh.frag"),
             None,
         ).unwrap();
         BasicShader { program }

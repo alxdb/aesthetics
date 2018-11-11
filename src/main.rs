@@ -3,12 +3,12 @@ extern crate glium;
 extern crate itertools;
 extern crate nalgebra_glm;
 
-mod renderer;
-mod window;
-
 use renderer::object;
 use renderer::shader;
 use renderer::shader::Shader;
+
+mod renderer;
+mod window;
 
 fn main() {
     // Diplay Setup
@@ -21,9 +21,9 @@ fn main() {
     let (mut ev_loop, display) = window::new_window(window_builder, context_builder);
 
     // Shader Compilation
-    let basic_shader = shader::BasicShader::new(&display);
     use renderer::Renderer;
-    let mut basic_render = renderer::BasicRenderer::new(basic_shader, &display);
+    let mut basic_render: renderer::BasicRenderer<_, shader::BasicShader> =
+        renderer::BasicRenderer::new(&display);
 
     // Buffer Allocation
     let _sphere = basic_render.add_object(object::Sphere::new(0.5, 10));

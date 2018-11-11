@@ -12,7 +12,7 @@ pub fn new_window(
     let mut ev_loop = glium::glutin::EventsLoop::new();
     let display = glium::Display::new(window_builder, context_builder, &ev_loop).unwrap();
     // hacky fix for https://github.com/tomaka/glutin/issues/1069
-    {
+    if cfg!(target_os = "macos") {
         use glium::backend::glutin::glutin::GlContext;
         ev_loop.poll_events(|_| {});
         let win = display.gl_window();
