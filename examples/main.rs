@@ -9,12 +9,12 @@ use renderer::shader::Shader;
 fn main() {
     // Diplay Setup
     let window_builder = glium::glutin::WindowBuilder::new()
-        .with_fullscreen(Some(window::get_primary_monitor()))
+        .with_fullscreen(Some(window_utils::get_primary_monitor()))
         .with_title("Hello world");
     let context_builder = glium::glutin::ContextBuilder::new()
         .with_multisampling(8)
         .with_vsync(true);
-    let (mut ev_loop, display) = window::new_window(window_builder, context_builder);
+    let (mut ev_loop, display) = window_utils::new_window(window_builder, context_builder);
 
     // Shader Compilation
     use renderer::Renderer;
@@ -37,7 +37,7 @@ fn main() {
 
     'main: loop {
         // Input Handle
-        for ev in window::get_events(&mut ev_loop).iter() {
+        for ev in window_utils::get_events(&mut ev_loop).iter() {
             match ev {
                 glium::glutin::Event::WindowEvent {
                     event: glium::glutin::WindowEvent::CloseRequested,
