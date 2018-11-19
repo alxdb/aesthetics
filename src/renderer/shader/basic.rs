@@ -28,7 +28,7 @@ impl Shader<BasicVertex> for BasicShader {
         &self.program
     }
 
-    fn create_vertices(&self, mesh: &object::MeshData) -> Vec<BasicVertex> {
+    fn create_vertices(&self, mesh: &super::object::MeshData) -> Vec<BasicVertex> {
         let mut vertices = Vec::new();
         for point in mesh.get_points() {
             vertices.push(BasicVertex {

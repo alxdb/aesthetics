@@ -1,14 +1,10 @@
-extern crate generational_arena;
-extern crate glium;
-extern crate itertools;
-extern crate nalgebra_glm;
+extern crate aesthetic;
 
+use aesthetic::*;
 use renderer::object;
 use renderer::shader;
 use renderer::shader::Shader;
 
-mod renderer;
-mod window;
 
 fn main() {
     // Diplay Setup
