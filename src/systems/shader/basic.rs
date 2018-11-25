@@ -17,8 +17,8 @@ impl Shader<BasicVertex> for BasicShader {
     fn new(display: &glium::Display) -> Self {
         let program = glium::program::Program::from_source(
             display,
-            include_str!("glsl/mesh.vert"),
-            include_str!("glsl/mesh.frag"),
+            include_str!(../renderers/mesh/mesh.vert),
+            include_str!(../renderers/mesh/mesh.frag),
             None,
         ).unwrap();
         BasicShader { program }

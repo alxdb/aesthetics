@@ -1,26 +1,39 @@
-use specs::prelude::*;
 use glium;
 use itertools::iproduct;
 use nalgebra_glm as glm;
+use specs::prelude::*;
 
-#[derive(Debug, Clone, Component)]
-#[storage(VecStorage)]
-pub struct MeshData<I> where I: glium::index::Index + Send + Sync {
+// this is simpler otherwise will need separate storage for each index type
+// points will take up more VRam anyway, potential optimization
+pub type IndexType = u32;
+
+#[derive(Debug, Clone)]
+pub struct MeshData {
     points: Vec<glm::Vec3>,
-    indices: Vec<I>,
+    indices: Vec<IndexType>,
     index_type: glium::index::PrimitiveType,
 }
 
-impl<I> MeshData<I> where I: glium::index::Index + Send + Sync {
+impl Component for MeshData {
+    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
+}
+
+impl MeshData {
     pub fn get_points(&self) -> &Vec<glm::Vec3> {
         &self.points
     }
-    pub fn get_indices(&self) -> (&Vec<I>, glium::index::PrimitiveType) {
-        (&self.indices, self.index_type)
+
+    pub fn get_indices(&self) -> &Vec<IndexType> {
+        &self.indices
     }
+
+    pub fn get_index_type(&self) -> &glium::index::PrimitiveType {
+        &self.index_type
+    }
+
     pub fn update_points<F>(&mut self, update_function: F)
-        where
-            F: Fn(&glm::Vec3) -> glm::Vec3,
+    where
+        F: Fn(&glm::Vec3) -> glm::Vec3,
     {
         for point in self.points.iter_mut() {
             *point = update_function(point);
@@ -28,14 +41,14 @@ impl<I> MeshData<I> where I: glium::index::Index + Send + Sync {
     }
 }
 
-pub fn cube(dims: (f32, f32, f32)) -> MeshData<u8> {
+pub fn cube(dims: (f32, f32, f32)) -> MeshData {
     // Points
     let mut points = Vec::new();
     for (i, j, k) in iproduct!(0..=1, 0..=1, 0..=1) {
         let point = glm::vec3(i as f32 * dims.0, j as f32 * dims.1, k as f32 * dims.2);
         points.push(point);
     }
-    let mut indices: Vec<u8> = Vec::new();
+    let mut indices: Vec<IndexType> = Vec::new();
     // Faces
     let mut sides = [[[0; 4]; 2]; 3];
 
@@ -46,7 +59,7 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData<u8> {
                     0 => *s = i + j * 2 + k * 4,
                     1 => *s = k + i * 2 + j * 4,
                     2 => *s = j + k * 2 + i * 4,
-                    _ => panic!("oob"),
+                    _ => panic!("something has gone terribly wrong"),
                 }
             }
         }
@@ -55,7 +68,7 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData<u8> {
     for side_pair in sides.iter() {
         for side in side_pair.iter() {
             for (o, i) in iproduct!(0..=1, 0..3) {
-                indices.push(side[i + o] as u8);
+                indices.push(side[i + o] as IndexType);
             }
         }
     }
@@ -67,7 +80,7 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData<u8> {
     }
 }
 
-pub fn sphere(radius: f32, segments: u16) -> MeshData<u32> {
+pub fn sphere(radius: f32, segments: u16) -> MeshData {
     // Points
     let mut points = Vec::new();
     use std::f32::consts;
@@ -78,16 +91,16 @@ pub fn sphere(radius: f32, segments: u16) -> MeshData<u32> {
         points.push(point * radius);
     }
 
-    let mut indices: Vec<u32> = Vec::new();
+    let mut indices: Vec<IndexType> = Vec::new();
     for (u, v) in iproduct!(0..segments, 0..segments) {
         // Faces
         let mut side = [0; 4];
         for ((i, j), s) in iproduct!(0..=1, 0..=1).zip(side.iter_mut()) {
-            *s = (u + i) as u32 + segments as u32 * (v + j) as u32;
+            *s = (u + i) + segments * (v + j);
         }
         // Triangulation
         for (o, i) in iproduct!(0..=1, 0..3) {
-            indices.push(side[i + o]);
+            indices.push(side[i + o] as IndexType);
         }
     }
 

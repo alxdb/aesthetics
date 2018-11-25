@@ -1,10 +1,13 @@
 <component name="ProjectDictionaryState">
   <dictionary name="alxdb">
     <words>
+      <w>desync</w>
       <w>glium</w>
+      <w>glsl</w>
       <w>hacky</w>
       <w>nalgebra</w>
       <w>renderers</w>
+      <w>vert</w>
     </words>
   </dictionary>
 </component>
