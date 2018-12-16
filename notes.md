@@ -7,8 +7,8 @@
 ## Structure
 
 Event loop and display have convenience methods to create them but they are treated as separate entities.
-References to them (are resources/are passed to constructors)
+References to them are passed to constructors
 
-Renderers draw Objects.
-A Renderer will contain a Shader, and a map of Buffers to Entities. it will fetch entities that have the components it
+Renderers draw Entities with specific Components.
+A Renderer will contain a Shader, and a map of Entities to Buffers. it will fetch entities that have the components it
 needs/knows how to deal with.

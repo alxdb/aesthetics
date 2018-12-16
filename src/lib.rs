@@ -11,4 +11,3 @@ extern crate shred_derive;
 pub mod components;
 pub mod systems;
 pub mod window_utils;
-

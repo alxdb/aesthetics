@@ -1,13 +1,14 @@
-use components::mesh::IndexType;
-use components::mesh::MeshData;
-use glium::IndexBuffer;
-use glium::{implement_vertex, VertexBuffer};
-use shred_derive::SystemData;
+use crate::components::mesh::{IndexType, MeshData};
+use systems::renderers::camera::Camera;
+
+use glium::{implement_vertex, IndexBuffer, VertexBuffer};
 use specs::prelude::*;
+use shred_derive::SystemData;
+
 use std::collections::HashMap;
 
 #[derive(SystemData)]
-pub struct MeshRendererData<'a> {
+pub struct RendererData<'a> {
     entities: Entities<'a>,
     mesh: ReadStorage<'a, MeshData>,
 }
@@ -35,7 +36,7 @@ struct Buffers {
     index: IndexBuffer<IndexType>,
 }
 
-pub struct MeshRenderer<'a> {
+pub struct Renderer<'a> {
     mesh_reader_id: ReaderId<ComponentEvent>,
     inserted_meshes: BitSet,
     modified_meshes: BitSet,
@@ -43,12 +44,13 @@ pub struct MeshRenderer<'a> {
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
     display: &'a glium::Display,
+    camera: Camera,
 }
 
-impl<'a> MeshRenderer<'a> {
-    pub fn new(world: &mut World, display: &'a glium::Display) -> Self {
-        <MeshRenderer as System>::SystemData::setup(&mut world.res);
-        MeshRenderer {
+impl<'a> Renderer<'a> {
+    pub fn new(world: &mut World, display: &'a glium::Display, camera: Camera) -> Self {
+        <Renderer as System>::SystemData::setup(&mut world.res);
+        Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
             modified_meshes: BitSet::new(),
             inserted_meshes: BitSet::new(),
@@ -61,12 +63,13 @@ impl<'a> MeshRenderer<'a> {
                 None,
             ).unwrap(),
             display,
+            camera,
         }
     }
 }
 
-impl<'a> System<'a> for MeshRenderer<'a> {
-    type SystemData = MeshRendererData<'a>;
+impl<'a> System<'a> for Renderer<'a> {
+    type SystemData = RendererData<'a>;
 
     //noinspection RsUnresolvedReference
     fn run(&mut self, data: Self::SystemData) {
@@ -92,9 +95,8 @@ impl<'a> System<'a> for MeshRenderer<'a> {
 
         for (ent, mesh, _) in (&data.entities, &data.mesh, &self.inserted_meshes).join() {
             let buffers = {
-                let vertices = make_vertices(mesh);
                 Buffers {
-                    vertex: glium::vertex::VertexBuffer::dynamic(self.display, &vertices).unwrap(),
+                    vertex: glium::vertex::VertexBuffer::dynamic(self.display, &make_vertices(mesh)).unwrap(),
                     index: glium::index::IndexBuffer::dynamic(
                         self.display,
                         *mesh.get_index_type(),
@@ -121,7 +123,7 @@ impl<'a> System<'a> for MeshRenderer<'a> {
         for (ent, _) in (&data.entities, &self.removed_meshes).join() {
             if let Some(b) = self.buffers.remove(&ent) {
                 println!("deleted: {:?}\nfor {:?}", b, ent);
-            // Calls drop
+                // Calls drop
             } else {
                 panic!("desync");
             }
