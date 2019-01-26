@@ -1,7 +1,7 @@
-extern crate aesthetic;
+extern crate aesthetics;
 extern crate specs;
 
-use aesthetic::{components::mesh, systems::renderers, window_utils};
+use aesthetics::{components::mesh, systems::renderers, window_utils};
 use specs::{world::Builder, RunNow, World};
 
 use std::time::Instant;
