@@ -44,11 +44,11 @@ pub struct Renderer<'a> {
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
     display: &'a glium::Display,
-    camera: Camera,
+    camera: Entity,
 }
 
 impl<'a> Renderer<'a> {
-    pub fn new(world: &mut World, display: &'a glium::Display, camera: Camera) -> Self {
+    pub fn new(world: &mut World, display: &'a glium::Display, camera: Entity) -> Self {
         <Renderer as System>::SystemData::setup(&mut world.res);
         Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
@@ -58,8 +58,8 @@ impl<'a> Renderer<'a> {
             buffers: HashMap::new(),
             shader: glium::program::Program::from_source(
                 display,
-                include_str!("vert.glsl"),
-                include_str!("frag.glsl"),
+                include_str!("basic.vert"),
+                include_str!("basic.frag"),
                 None,
             ).unwrap(),
             display,
@@ -71,7 +71,6 @@ impl<'a> Renderer<'a> {
 impl<'a> System<'a> for Renderer<'a> {
     type SystemData = RendererData<'a>;
 
-    //noinspection RsUnresolvedReference
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
         self.inserted_meshes.clear();

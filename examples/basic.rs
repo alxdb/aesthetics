@@ -24,7 +24,7 @@ fn main() {
         .with(renderers::camera::Camera::Ortho { size: 0.5 })
         .build();
 
-    let mut mesh_renderer = renderers::basic::Renderer::new(&mut world, &display, &camera);
+    let mut mesh_renderer = renderers::basic::Renderer::new(&mut world, &display, camera);
 
     let cube = world
         .create_entity()
