@@ -19,12 +19,16 @@ fn init_display() -> (glium::glutin::EventsLoop, glium::Display) {
 fn main() {
     let mut world = World::new();
     let (mut ev_loop, display) = init_display();
+    let mut mesh_renderer = renderers::basic::Renderer::new(&mut world, &display);
+
     let camera = world
         .create_entity()
         .with(renderers::camera::Camera::Ortho { size: 0.5 })
         .build();
 
-    let mut mesh_renderer = renderers::basic::Renderer::new(&mut world, &display, camera);
+    println!("camera: {:#?}", camera);
+
+    mesh_renderer.set_main_camera(camera);
 
     let cube = world
         .create_entity()
@@ -46,6 +50,6 @@ fn main() {
 
         // Rendering
         mesh_renderer.run_now(&world.res);
-        println!("dur: {:#?}", Instant::now() - start);
+        // println!("dur: {:#?}", Instant::now() - start);
     }
 }

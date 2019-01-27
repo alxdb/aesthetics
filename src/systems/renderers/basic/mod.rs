@@ -11,6 +11,7 @@ use std::collections::HashMap;
 pub struct RendererData<'a> {
     entities: Entities<'a>,
     mesh: ReadStorage<'a, MeshData>,
+    cameras: ReadStorage<'a, Camera>
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -44,11 +45,11 @@ pub struct Renderer<'a> {
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
     display: &'a glium::Display,
-    camera: Entity,
+    main_camera: Option<Entity>,
 }
 
 impl<'a> Renderer<'a> {
-    pub fn new(world: &mut World, display: &'a glium::Display, camera: Entity) -> Self {
+    pub fn new(world: &mut World, display: &'a glium::Display) -> Self {
         <Renderer as System>::SystemData::setup(&mut world.res);
         Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
@@ -63,8 +64,12 @@ impl<'a> Renderer<'a> {
                 None,
             ).unwrap(),
             display,
-            camera,
+            main_camera: None,
         }
+    }
+
+    pub fn set_main_camera(&mut self, main_camera: Entity) {
+        self.main_camera = Some(main_camera);
     }
 }
 
@@ -76,6 +81,21 @@ impl<'a> System<'a> for Renderer<'a> {
         self.inserted_meshes.clear();
         self.modified_meshes.clear();
         self.removed_meshes.clear();
+
+        let main_camera = match self.main_camera {
+            Some(camera) => {
+                match data.cameras.get(camera) {
+                    Some(camera) => camera,
+                    None => panic!("camera ref lost")
+                }
+            },
+            None => {
+                match (&data.cameras).join().next() {
+                    Some(camera) => camera,
+                    None => panic!("no camera entities")
+                }
+            }
+        };
 
         let events = data.mesh.channel().read(&mut self.mesh_reader_id);
         for event in events {

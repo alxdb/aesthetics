@@ -1,6 +1,6 @@
 use specs::{Component, HashMapStorage};
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(HashMapStorage)]
 pub enum Camera {
     Ortho {
