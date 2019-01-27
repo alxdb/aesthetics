@@ -59,7 +59,7 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
                     0 => *s = i + j * 2 + k * 4,
                     1 => *s = k + i * 2 + j * 4,
                     2 => *s = j + k * 2 + i * 4,
-                    _ => panic!("something has gone terribly wrong"),
+                    _ => panic!("something has gone terribly wrong, this is not a 4 dimensional universe"),
                 }
             }
         }
