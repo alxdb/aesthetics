@@ -44,8 +44,16 @@ impl MeshData {
 pub fn cube(dims: (f32, f32, f32)) -> MeshData {
     // Points
     let mut points = Vec::new();
-    for (i, j, k) in iproduct!(0..=1, 0..=1, 0..=1) {
-        let point = glm::vec3(i as f32 * dims.0, j as f32 * dims.1, k as f32 * dims.2);
+    for (i, j, k) in iproduct!(
+        (-1..=1).step_by(2),
+        (-1..=1).step_by(2),
+        (-1..=1).step_by(2)
+    ) {
+        let point = glm::vec3(
+            i as f32 * (dims.0 / 2.0),
+            j as f32 * (dims.1 / 2.0),
+            k as f32 * (dims.2 / 2.0),
+        );
         points.push(point);
     }
     let mut indices: Vec<IndexType> = Vec::new();
@@ -59,7 +67,9 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
                     0 => *s = i + j * 2 + k * 4,
                     1 => *s = k + i * 2 + j * 4,
                     2 => *s = j + k * 2 + i * 4,
-                    _ => panic!("something has gone terribly wrong, this is not a 4 dimensional universe"),
+                    _ => panic!(
+                        "something has gone terribly wrong, this is not a 4 dimensional universe"
+                    ),
                 }
             }
         }
