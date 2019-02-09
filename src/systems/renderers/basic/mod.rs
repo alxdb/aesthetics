@@ -13,6 +13,7 @@ use std::collections::HashMap;
 #[derive(SystemData)]
 pub struct RendererData<'a> {
     entities: Entities<'a>,
+    display: Read<'a, glium::Display>,
     mesh: ReadStorage<'a, MeshData>,
     transform: ReadStorage<'a, Transform>,
     cameras: ReadStorage<'a, Camera>,
@@ -41,20 +42,20 @@ struct Buffers {
     index: IndexBuffer<IndexType>,
 }
 
-pub struct Renderer<'a> {
+pub struct Renderer {
     mesh_reader_id: ReaderId<ComponentEvent>,
     inserted_meshes: BitSet,
     modified_meshes: BitSet,
     removed_meshes: BitSet,
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
-    display: &'a glium::Display,
     main_camera: Option<Entity>,
 }
 
-impl<'a> Renderer<'a> {
-    pub fn new(world: &mut World, display: &'a glium::Display) -> Self {
+impl Renderer {
+    pub fn new(world: &mut World) -> Self {
         <Renderer as System>::SystemData::setup(&mut world.res);
+        let display = world.read_resource::<glium::Display>();
         Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
             modified_meshes: BitSet::new(),
@@ -68,7 +69,6 @@ impl<'a> Renderer<'a> {
                 None,
             )
             .unwrap(),
-            display,
             main_camera: None,
         }
     }
@@ -78,12 +78,13 @@ impl<'a> Renderer<'a> {
     }
 }
 
-impl<'a> System<'a> for Renderer<'a> {
+impl<'a> System<'a> for Renderer {
     type SystemData = RendererData<'a>;
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        {// Handle Buffer Events
+        {
+            // Handle Buffer Events
             self.inserted_meshes.clear();
             self.modified_meshes.clear();
             self.removed_meshes.clear();
@@ -139,7 +140,7 @@ impl<'a> System<'a> for Renderer<'a> {
             for (ent, _) in (&data.entities, &self.removed_meshes).join() {
                 if let Some(b) = self.buffers.remove(&ent) {
                     println!("deleted: {:?}\nfor {:?}", b, ent);
-                    // Calls drop
+                // Calls drop
                 } else {
                     panic!("desync");
                 }
@@ -147,15 +148,21 @@ impl<'a> System<'a> for Renderer<'a> {
         }
 
         let main_camera = match self.main_camera {
-            Some(ent) => match (&data.cameras, &data.transform).join().get(ent, &data.entities) {
+            Some(ent) => match (&data.cameras, &data.transform)
+                .join()
+                .get(ent, &data.entities)
+            {
                 Some((camera, transform)) => (camera, transform),
                 None => panic!("camera ref lost/no transform for camera"),
             },
-            None => match (&data.cameras, &data.transform, &data.entities).join().next() {
+            None => match (&data.cameras, &data.transform, &data.entities)
+                .join()
+                .next()
+            {
                 Some((camera, transform, ent)) => {
                     self.main_camera = Some(ent);
                     (camera, transform)
-                },
+                }
                 None => panic!("no camera entities with a transform"),
             },
         };

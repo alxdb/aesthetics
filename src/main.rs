@@ -62,8 +62,6 @@ fn main() {
         .with(transform::Transform::new(glm::Vec3::new(0.0, 0.0, 0.0)))
         .build();
 
-    let mut dispatcher = DispatcherBuilder::new().with_thread_local(renderers::basic::Renderer);
-
     'main: loop {
         // let start = Instant::now();
         // Input Handle
