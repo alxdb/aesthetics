@@ -3,12 +3,13 @@ extern crate nalgebra_glm;
 extern crate specs;
 
 use aesthetics::{
-    components::{mesh, transform},
-    systems::renderers,
+    components::{mesh, Camera, Transform},
+    systems::renderer,
     window_utils,
 };
+
 use nalgebra_glm as glm;
-use specs::{world::Builder, DispatcherBuilder, RunNow, World};
+use specs::{world::Builder, DispatcherBuilder, World};
 
 // use std::time::Instant;
 
@@ -25,7 +26,7 @@ fn init_display() -> (glium::glutin::EventsLoop, glium::Display) {
 fn main() {
     let mut world = World::new();
     let (mut ev_loop, display) = init_display();
-    let mut mesh_renderer = renderers::basic::Renderer::new(&mut world, &display);
+    let mut mesh_renderer = renderer::Renderer::new(&mut world, &display);
 
     let camera = world
         .create_entity()
@@ -33,11 +34,11 @@ fn main() {
         //     size: 2.0,
         //     ratio: 1.0,
         // })
-        .with(renderers::camera::Camera::Persp {
+        .with(Camera::Persp {
             fov: 45.0,
             aspect: 1920.0 / 1080.0,
         })
-        .with(transform::Transform {
+        .with(Transform {
             pos: glm::vec3(0.0, 0.0, 3.0),
             // rot: glm::quat_look_at(&glm::vec3(0.0, 0.5, 0.0), &glm::vec3(0.0, 1.0, 0.0)),
             // rot: glm::quat_angle_axis(45.0, &glm::vec3(1.0, 0.0, 0.0)),
@@ -56,10 +57,14 @@ fn main() {
     //     })
     //     .build();
 
+    let mut dispatcher = DispatcherBuilder::new()
+        .with_thread_local(mesh_renderer)
+        .build();
+
     let _sphere = world
         .create_entity()
-        .with(mesh::sphere(1.0, 13))
-        .with(transform::Transform::new(glm::Vec3::new(0.0, 0.0, 0.0)))
+        .with(mesh::sphere(1.0, 12))
+        .with(Transform::new(glm::Vec3::new(0.0, 0.0, 0.0)))
         .build();
 
     'main: loop {
@@ -78,7 +83,8 @@ fn main() {
         // rotate object
 
         // Rendering
-        mesh_renderer.run_now(&world.res);
+        dispatcher.dispatch(&mut world.res);
+        world.maintain();
         // println!("dur: {:#?}", Instant::now() - start);
     }
     println!("exited cleanly")

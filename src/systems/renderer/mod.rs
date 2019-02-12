@@ -1,7 +1,6 @@
 use components::{
-    camera::Camera,
     mesh::{IndexType, MeshData},
-    transform::Transform,
+    Camera, Transform,
 };
 
 use glium::{implement_vertex, uniform, IndexBuffer, VertexBuffer};
@@ -9,12 +8,10 @@ use shred_derive::SystemData;
 use specs::prelude::*;
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 #[derive(SystemData)]
 pub struct RendererData<'a> {
     entities: Entities<'a>,
-    display: Read<'a, glium::Display>,
     mesh: ReadStorage<'a, MeshData>,
     transform: ReadStorage<'a, Transform>,
     cameras: ReadStorage<'a, Camera>,
@@ -64,7 +61,7 @@ impl<'a> Renderer<'a> {
             removed_meshes: BitSet::new(),
             buffers: HashMap::new(),
             shader: glium::program::Program::from_source(
-                display.as_ref(),
+                display,
                 include_str!("basic.vert"),
                 include_str!("basic.frag"),
                 None,
@@ -78,76 +75,76 @@ impl<'a> Renderer<'a> {
     pub fn set_main_camera(&mut self, main_camera: Entity) {
         self.main_camera = Some(main_camera);
     }
-}
 
-impl<'a> System<'a> for Renderer<'a> {
-    type SystemData = RendererData<'a>;
+    fn handle_buffer_events(&mut self, data: &<Renderer as System>::SystemData) {
+        self.inserted_meshes.clear();
+        self.modified_meshes.clear();
+        self.removed_meshes.clear();
 
-    fn run(&mut self, data: Self::SystemData) {
-        use specs::Join;
-        {
-            // Handle Buffer Events
-            self.inserted_meshes.clear();
-            self.modified_meshes.clear();
-            self.removed_meshes.clear();
-
-            let events = data.mesh.channel().read(&mut self.mesh_reader_id);
-            for event in events {
-                match event {
-                    ComponentEvent::Modified(id) => {
-                        self.modified_meshes.add(*id);
-                    }
-                    ComponentEvent::Inserted(id) => {
-                        self.inserted_meshes.add(*id);
-                    }
-                    ComponentEvent::Removed(id) => {
-                        self.removed_meshes.add(*id);
-                    }
+        let events = data.mesh.channel().read(&mut self.mesh_reader_id);
+        for event in events {
+            match event {
+                ComponentEvent::Modified(id) => {
+                    self.modified_meshes.add(*id);
                 }
-            }
-
-            for (ent, mesh, _) in (&data.entities, &data.mesh, &self.inserted_meshes).join() {
-                let buffers = {
-                    Buffers {
-                        vertex: glium::vertex::VertexBuffer::dynamic(
-                            self.display,
-                            &make_vertices(mesh),
-                        )
-                        .unwrap(),
-                        index: glium::index::IndexBuffer::dynamic(
-                            self.display,
-                            *mesh.get_index_type(),
-                            mesh.get_indices(),
-                        )
-                        .unwrap(),
-                    }
-                };
-
-                println!("created: {:?}\nfor {:?}", buffers, ent);
-                if let Some(_) = self.buffers.insert(ent, buffers) {
-                    panic!("desync");
+                ComponentEvent::Inserted(id) => {
+                    self.inserted_meshes.add(*id);
                 }
-            }
-
-            for (ent, mesh, _) in (&data.entities, &data.mesh, &self.modified_meshes).join() {
-                // Only allows updating for the same number of vertices and identical indexes
-                // Otherwise should just delete and recreate
-                if let Some(b) = self.buffers.get(&ent) {
-                    b.vertex.write(&make_vertices(mesh));
-                } else {
-                    panic!("desync");
-                }
-            }
-
-            for (ent, _) in (&data.entities, &self.removed_meshes).join() {
-                if let Some(b) = self.buffers.remove(&ent) {
-                    println!("deleted: {:?}\nfor {:?}", b, ent);
-                // Calls drop
-                } else {
-                    panic!("desync");
+                ComponentEvent::Removed(id) => {
+                    self.removed_meshes.add(*id);
                 }
             }
         }
+
+        for (ent, mesh, _) in (&data.entities, &data.mesh, &self.inserted_meshes).join() {
+            let buffers = {
+                Buffers {
+                    vertex: glium::vertex::VertexBuffer::dynamic(
+                        self.display,
+                        &make_vertices(mesh),
+                    )
+                    .unwrap(),
+                    index: glium::index::IndexBuffer::dynamic(
+                        self.display,
+                        *mesh.get_index_type(),
+                        mesh.get_indices(),
+                    )
+                    .unwrap(),
+                }
+            };
+
+            println!("created: {:?}\nfor {:?}", buffers, ent);
+            if let Some(_) = self.buffers.insert(ent, buffers) {
+                panic!("desync");
+            }
+        }
+
+        for (ent, mesh, _) in (&data.entities, &data.mesh, &self.modified_meshes).join() {
+            // Only allows updating for the same number of vertices and identical indexes
+            // Otherwise should just delete and recreate
+            if let Some(b) = self.buffers.get(&ent) {
+                b.vertex.write(&make_vertices(mesh));
+            } else {
+                panic!("desync");
+            }
+        }
+
+        for (ent, _) in (&data.entities, &self.removed_meshes).join() {
+            if let Some(b) = self.buffers.remove(&ent) {
+                println!("deleted: {:?}\nfor {:?}", b, ent);
+            // Calls drop
+            } else {
+                panic!("desync");
+            }
+        }
+    }
+}
+
+impl<'a, 'b> System<'b> for Renderer<'a> {
+    type SystemData = RendererData<'b>;
+
+    fn run(&mut self, data: Self::SystemData) {
+        self.handle_buffer_events(&data);
 
         let main_camera = match self.main_camera {
             Some(ent) => match (&data.cameras, &data.transform)

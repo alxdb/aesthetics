@@ -95,18 +95,18 @@ pub fn sphere(radius: f32, segments: u16) -> MeshData {
     let mut points = Vec::new();
     use std::f32::consts;
     for (u, v) in iproduct!(0..=segments, 0..=segments) {
-        let norm_coord = glm::vec2(u as f32, v as f32) / (segments - 1) as f32;
+        let norm_coord = glm::vec2(u as f32, v as f32) / segments as f32;
         let (azi, pol) = (norm_coord.x * consts::PI * 2.0, norm_coord.y * consts::PI);
         let point = glm::vec3(pol.sin() * azi.cos(), pol.sin() * azi.sin(), pol.cos());
         points.push(point * radius);
     }
 
     let mut indices: Vec<IndexType> = Vec::new();
-    for (u, v) in iproduct!(0..segments, 0..segments) {
+    for (u, v) in iproduct!(0..=segments, 0..=segments) {
         // Faces
         let mut side = [0; 4];
         for ((i, j), s) in iproduct!(0..=1, 0..=1).zip(side.iter_mut()) {
-            *s = (u + i) + segments * (v + j);
+            *s = (u + i) + (segments + 1) * (v + j);
         }
         // Triangulation
         for (o, i) in iproduct!(0..=1, 0..3) {
