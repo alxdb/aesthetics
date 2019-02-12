@@ -1,14 +1,15 @@
 use components::{
+    camera::Camera,
     mesh::{IndexType, MeshData},
     transform::Transform,
 };
-use systems::renderers::camera::Camera;
 
 use glium::{implement_vertex, uniform, IndexBuffer, VertexBuffer};
 use shred_derive::SystemData;
 use specs::prelude::*;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(SystemData)]
 pub struct RendererData<'a> {
@@ -42,20 +43,20 @@ struct Buffers {
     index: IndexBuffer<IndexType>,
 }
 
-pub struct Renderer {
+pub struct Renderer<'a> {
     mesh_reader_id: ReaderId<ComponentEvent>,
     inserted_meshes: BitSet,
     modified_meshes: BitSet,
     removed_meshes: BitSet,
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
+    display: &'a glium::Display,
     main_camera: Option<Entity>,
 }
 
-impl Renderer {
-    pub fn new(world: &mut World) -> Self {
+impl<'a> Renderer<'a> {
+    pub fn new(world: &mut World, display: &'a glium::Display) -> Self {
         <Renderer as System>::SystemData::setup(&mut world.res);
-        let display = world.read_resource::<glium::Display>();
         Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
             modified_meshes: BitSet::new(),
@@ -63,12 +64,13 @@ impl Renderer {
             removed_meshes: BitSet::new(),
             buffers: HashMap::new(),
             shader: glium::program::Program::from_source(
-                display,
+                display.as_ref(),
                 include_str!("basic.vert"),
                 include_str!("basic.frag"),
                 None,
             )
             .unwrap(),
+            display,
             main_camera: None,
         }
     }
@@ -78,7 +80,7 @@ impl Renderer {
     }
 }
 
-impl<'a> System<'a> for Renderer {
+impl<'a> System<'a> for Renderer<'a> {
     type SystemData = RendererData<'a>;
 
     fn run(&mut self, data: Self::SystemData) {
