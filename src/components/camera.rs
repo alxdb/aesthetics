@@ -1,5 +1,9 @@
 use nalgebra_glm as glm;
-use specs::{Component, HashMapStorage};
+use specs::{Component, Entity, HashMapStorage, NullStorage};
+
+#[derive(Component, Default)]
+#[storage(NullStorage)]
+pub struct ActiveCamera(pub Option<Entity>);
 
 #[derive(Component, Debug)]
 #[storage(HashMapStorage)]

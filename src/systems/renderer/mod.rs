@@ -1,6 +1,6 @@
 use components::{
     mesh::{IndexType, MeshData},
-    Camera, Transform,
+    ActiveCamera, Camera, Transform,
 };
 
 use glium::{implement_vertex, uniform, IndexBuffer, VertexBuffer};
@@ -12,6 +12,7 @@ use std::collections::HashMap;
 #[derive(SystemData)]
 pub struct RendererData<'a> {
     entities: Entities<'a>,
+    active_camera: Write<'a, ActiveCamera>,
     mesh: ReadStorage<'a, MeshData>,
     transform: ReadStorage<'a, Transform>,
     cameras: ReadStorage<'a, Camera>,
@@ -48,7 +49,6 @@ pub struct Renderer<'a> {
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
     display: &'a glium::Display,
-    main_camera: Option<Entity>,
 }
 
 impl<'a> Renderer<'a> {
@@ -68,12 +68,7 @@ impl<'a> Renderer<'a> {
             )
             .unwrap(),
             display,
-            main_camera: None,
         }
-    }
-
-    pub fn set_main_camera(&mut self, main_camera: Entity) {
-        self.main_camera = Some(main_camera);
     }
 
     fn handle_buffer_events(&mut self, data: &<Renderer as System>::SystemData) {
@@ -113,7 +108,6 @@ impl<'a> Renderer<'a> {
                 }
             };
 
-            println!("created: {:?}\nfor {:?}", buffers, ent);
             if let Some(_) = self.buffers.insert(ent, buffers) {
                 panic!("desync");
             }
@@ -130,9 +124,8 @@ impl<'a> Renderer<'a> {
         }
 
         for (ent, _) in (&data.entities, &self.removed_meshes).join() {
-            if let Some(b) = self.buffers.remove(&ent) {
-                println!("deleted: {:?}\nfor {:?}", b, ent);
-            // Calls drop
+            if let Some(_) = self.buffers.remove(&ent) {
+                // Calls drop
             } else {
                 panic!("desync");
             }
@@ -143,26 +136,26 @@ impl<'a> Renderer<'a> {
 impl<'a, 'b> System<'b> for Renderer<'a> {
     type SystemData = RendererData<'b>;
 
-    fn run(&mut self, data: Self::SystemData) {
+    fn run(&mut self, mut data: Self::SystemData) {
         self.handle_buffer_events(&data);
 
-        let main_camera = match self.main_camera {
+        let main_camera = match data.active_camera.0 {
             Some(ent) => match (&data.cameras, &data.transform)
                 .join()
                 .get(ent, &data.entities)
             {
                 Some((camera, transform)) => (camera, transform),
-                None => panic!("camera ref lost/no transform for camera"),
+                None => panic!("no transform and camera for entity: {:?}", ent),
             },
             None => match (&data.cameras, &data.transform, &data.entities)
                 .join()
                 .next()
             {
                 Some((camera, transform, ent)) => {
-                    self.main_camera = Some(ent);
+                    *data.active_camera = ActiveCamera(Some(ent));
                     (camera, transform)
                 }
-                None => panic!("no camera entities with a transform"),
+                None => panic!("no entities with a transform and a camera"),
             },
         };
 

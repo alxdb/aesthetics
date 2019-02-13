@@ -1,4 +1,4 @@
-pub use self::camera::Camera;
+pub use self::camera::{ActiveCamera, Camera};
 mod camera;
 
 pub use self::transform::Transform;
