@@ -41,18 +41,18 @@ struct Buffers {
     index: IndexBuffer<IndexType>,
 }
 
-pub struct Renderer<'a> {
+pub struct Renderer {
     mesh_reader_id: ReaderId<ComponentEvent>,
     inserted_meshes: BitSet,
     modified_meshes: BitSet,
     removed_meshes: BitSet,
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
-    display: &'a glium::Display,
+    display: glium::Display,
 }
 
-impl<'a> Renderer<'a> {
-    pub fn new(world: &mut World, display: &'a glium::Display) -> Self {
+impl Renderer {
+    pub fn new(world: &mut World, display: glium::Display) -> Self {
         <Renderer as System>::SystemData::setup(&mut world.res);
         Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
@@ -61,7 +61,7 @@ impl<'a> Renderer<'a> {
             removed_meshes: BitSet::new(),
             buffers: HashMap::new(),
             shader: glium::program::Program::from_source(
-                display,
+                &display,
                 include_str!("basic.vert"),
                 include_str!("basic.frag"),
                 None,
@@ -95,12 +95,12 @@ impl<'a> Renderer<'a> {
             let buffers = {
                 Buffers {
                     vertex: glium::vertex::VertexBuffer::dynamic(
-                        self.display,
+                        &self.display,
                         &make_vertices(mesh),
                     )
                     .unwrap(),
                     index: glium::index::IndexBuffer::dynamic(
-                        self.display,
+                        &self.display,
                         *mesh.get_index_type(),
                         mesh.get_indices(),
                     )
@@ -133,8 +133,8 @@ impl<'a> Renderer<'a> {
     }
 }
 
-impl<'a, 'b> System<'b> for Renderer<'a> {
-    type SystemData = RendererData<'b>;
+impl<'a> System<'a> for Renderer {
+    type SystemData = RendererData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
         self.handle_buffer_events(&data);
