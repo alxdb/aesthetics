@@ -4,7 +4,7 @@ extern crate specs;
 
 use aesthetics::{
     components::{mesh, ActiveCamera, Camera, Transform},
-    systems::renderer,
+    systems::{event_handler, input, renderer},
     window_utils,
 };
 
@@ -13,7 +13,7 @@ use specs::{world::Builder, DispatcherBuilder, World};
 
 fn init_display() -> (glium::glutin::EventsLoop, glium::Display) {
     let window_builder = glium::glutin::WindowBuilder::new()
-        .with_fullscreen(Some(window_utils::get_primary_monitor()))
+        // .with_fullscreen(Some(window_utils::get_primary_monitor()))
         .with_title("Hello world");
     let context_builder = glium::glutin::ContextBuilder::new()
         .with_multisampling(8)
@@ -23,10 +23,18 @@ fn init_display() -> (glium::glutin::EventsLoop, glium::Display) {
 
 fn main() {
     let mut world = World::new();
-    let (mut ev_loop, display) = init_display();
+    let (ev_loop, display) = init_display();
     let renderer = renderer::Renderer::new(&mut world, display);
+    let event_handler = event_handler::EventHandler::new(ev_loop);
+    let input_hanlder = input::InputHandler;
 
-    let mut dispatcher = DispatcherBuilder::new().with_thread_local(renderer).build();
+    let mut dispatcher = DispatcherBuilder::new()
+        .with_thread_local(event_handler)
+        .with(input_hanlder, "handle_input", &[])
+        .with_thread_local(renderer)
+        .build();
+
+    dispatcher.setup(&mut world.res);
 
     let _camera = world
         .create_entity()
@@ -71,15 +79,16 @@ fn main() {
         .build();
 
     'main: loop {
-        for ev in window_utils::get_events(&mut ev_loop).iter() {
+        for ev in &world.read_resource::<event_handler::WindowEvents>().0 {
             match ev {
-                glium::glutin::Event::WindowEvent {
-                    event: glium::glutin::WindowEvent::CloseRequested,
-                    ..
-                } => break 'main,
+                glium::glutin::WindowEvent::CloseRequested => break 'main,
                 _ => (),
             }
         }
+
+        // for (key, val) in &world.read_resource::<input::KeyState>().0 {
+        //     println!("{} = {}", key, val);
+        // }
 
         dispatcher.dispatch(&mut world.res);
         world.maintain();

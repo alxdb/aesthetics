@@ -62,8 +62,8 @@ impl Renderer {
             buffers: HashMap::new(),
             shader: glium::program::Program::from_source(
                 &display,
-                include_str!("basic.vert"),
-                include_str!("basic.frag"),
+                include_str!("vertex.glsl"),
+                include_str!("fragment.glsl"),
                 None,
             )
             .unwrap(),
