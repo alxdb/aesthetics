@@ -4,7 +4,7 @@ extern crate specs;
 
 use aesthetics::{
     components::{mesh, ActiveCamera, Camera, Transform},
-    systems::{event_handler, input, renderer},
+    systems::{event_handler, input_handler, renderer},
     window_utils,
 };
 
@@ -26,7 +26,7 @@ fn main() {
     let (ev_loop, display) = init_display();
     let renderer = renderer::Renderer::new(&mut world, display);
     let event_handler = event_handler::EventHandler::new(ev_loop);
-    let input_hanlder = input::InputHandler;
+    let input_hanlder = input_handler::InputHandler;
 
     let mut dispatcher = DispatcherBuilder::new()
         .with_thread_local(event_handler)
