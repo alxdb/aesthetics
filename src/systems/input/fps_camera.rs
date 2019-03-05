@@ -35,22 +35,12 @@ impl<'a> System<'a> for FPSCamera {
         if let Some(active_camera) = data.active_camera.0 {
             if let Some(mut transform) = (&mut data.transforms).get_mut(active_camera) {
                 // Rotate Camera
-                if let Some((yaw, pitch)) = data.input_state.mouse_delta {
-                    transform.rot *= glm::quat_angle_axis(
-                        if self.invert_camera.1 { yaw } else { -yaw } as f32 * self.rotate_speed,
-                        &glm::vec3(0.0, 1.0, 0.0),
-                    );
-                    let pitch_axis: glm::Vec3 =
-                        glm::quat_axis(&transform.rot).cross(&glm::vec3(0.0, 1.0, 0.0));
-                    println!("{}", pitch_axis);
-                    transform.rot *= glm::quat_angle_axis(
-                        if self.invert_camera.0 { pitch } else { -pitch } as f32
-                            * self.rotate_speed,
-                        &pitch_axis,
-                    );
-                    // println!("pitch {}", transform.rot);
-                    transform.rot = glm::quat_normalize(&transform.rot);
-                    // println!("yaw {}", transform.rot);
+                if let Some(delta) = data.input_state.mouse_delta {
+                    let yaw = delta.0 as f32 * self.rotate_speed;
+                    let pitch = delta.1 as f32 * self.rotate_speed;
+                    let pitch_q = glm::quat_angle_axis(pitch, &glm::vec3(1.0, 0.0, 0.0));
+                    let yaw_q = glm::quat_angle_axis(yaw as f32, &glm::vec3(0.0, 1.0, 0.0));
+                    transform.rot = transform.rot * yaw_q * pitch_q;
                 }
 
                 let key_state = &data.input_state.key_state;

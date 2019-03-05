@@ -52,20 +52,25 @@ fn main() {
         .with(Transform {
             // pos: glm::vec3(0.0, std::f32::consts::SQRT_2, std::f32::consts::SQRT_2),
             // rot: glm::quat_look_at(&glm::vec3(0.0, 1.0, -1.0), &glm::vec3(0.0, 1.0, 0.0)),
-            pos: glm::vec3(0.0, 0.0, 3.0),
+            pos: glm::vec3(0.0, 0.0, 0.0),
             rot: glm::Quat::identity(),
             // rot: glm::quat_angle_axis(0.5, &glm::vec3(0.0, 1.0, 0.0)),
         })
         .build();
 
-    let _obj = world
-        .create_entity()
-        .with(mesh::cube((1.0, 1.0, 1.0)))
-        .with(Transform {
-            pos: glm::vec3(0.0, 0.0, 0.0),
-            rot: glm::Quat::identity(),
-        })
-        .build();
+    for (x, y, z) in [(1, 0, 0), (0, 1, 0), (0, 0, 1)].iter() {
+        for i in (-1..=1).step_by(2) {
+            let (xx, yy, zz) = (i * x, i * y, i * z);
+            world
+                .create_entity()
+                .with(mesh::cube((0.2, 0.2, 0.2)))
+                .with(Transform {
+                    pos: glm::vec3(xx as f32, yy as f32, zz as f32),
+                    rot: glm::Quat::identity(),
+                })
+                .build();
+        }
+    }
 
     'main: loop {
         if world.read_resource::<event_handler::ShouldClose>().0 {
