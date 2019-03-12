@@ -22,6 +22,5 @@ impl Transform {
 
     pub fn make_view_matrix(&self) -> glm::Mat4 {
         glm::quat_to_mat4(&glm::quat_conjugate(&self.rot)) * glm::translation(&(-self.pos))
-        // self.make_model_matrix().inverse();
     }
 }

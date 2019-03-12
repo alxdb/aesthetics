@@ -9,6 +9,6 @@ uniform mat4 view;
 uniform mat4 projection;
 
 void main() {
-	v_col = vec3(0.0, 0.2, 0.5);
+	v_col = vec3(1.0, 1.0, 1.0);
 	gl_Position = projection * view * model * pos;
 }

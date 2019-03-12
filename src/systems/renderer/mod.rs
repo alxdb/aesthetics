@@ -38,7 +38,7 @@ fn make_vertices(mesh: &MeshData) -> Vec<Vertex> {
 #[derive(Debug)]
 struct Buffers {
     vertex: VertexBuffer<Vertex>,
-    index: IndexBuffer<IndexType>,
+    index: Option<IndexBuffer<IndexType>>,
 }
 
 pub struct Renderer {
@@ -49,10 +49,17 @@ pub struct Renderer {
     buffers: HashMap<Entity, Buffers>,
     shader: glium::program::Program,
     display: glium::Display,
+    draw_params: glium::DrawParameters<'static>,
+    clear_color: (f32, f32, f32, f32),
 }
 
 impl Renderer {
-    pub fn new(world: &mut World, display: glium::Display) -> Self {
+    pub fn new(
+        world: &mut World,
+        display: glium::Display,
+        draw_params: glium::DrawParameters<'static>,
+        clear_color: (f32, f32, f32, f32),
+    ) -> Self {
         <Renderer as System>::SystemData::setup(&mut world.res);
         Renderer {
             mesh_reader_id: world.write_storage::<MeshData>().register_reader(),
@@ -68,6 +75,8 @@ impl Renderer {
             )
             .unwrap(),
             display,
+            draw_params,
+            clear_color,
         }
     }
 
@@ -93,18 +102,31 @@ impl Renderer {
 
         for (ent, mesh, _) in (&data.entities, &data.mesh, &self.inserted_meshes).join() {
             let buffers = {
-                Buffers {
-                    vertex: glium::vertex::VertexBuffer::dynamic(
-                        &self.display,
-                        &make_vertices(mesh),
-                    )
-                    .unwrap(),
-                    index: glium::index::IndexBuffer::dynamic(
-                        &self.display,
-                        *mesh.get_index_type(),
-                        mesh.get_indices(),
-                    )
-                    .unwrap(),
+                if let Some(index_buffer) = mesh.get_indices() {
+                    Buffers {
+                        vertex: glium::vertex::VertexBuffer::dynamic(
+                            &self.display,
+                            &make_vertices(mesh),
+                        )
+                        .unwrap(),
+                        index: Some(
+                            glium::index::IndexBuffer::dynamic(
+                                &self.display,
+                                *mesh.get_index_type(),
+                                index_buffer,
+                            )
+                            .unwrap(),
+                        ),
+                    }
+                } else {
+                    Buffers {
+                        vertex: glium::vertex::VertexBuffer::dynamic(
+                            &self.display,
+                            &make_vertices(mesh),
+                        )
+                        .unwrap(),
+                        index: None,
+                    }
                 }
             };
 
@@ -161,16 +183,7 @@ impl<'a> System<'a> for Renderer {
 
         use glium::Surface;
         let mut frame = self.display.draw();
-        frame.clear_color_and_depth((0.0, 0.0, 0.0, 0.0), 1.0);
-
-        let params = glium::DrawParameters {
-            depth: glium::Depth {
-                test: glium::DepthTest::IfLess,
-                write: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
+        frame.clear_color_and_depth(self.clear_color, 1.0);
 
         for (ent, buffer) in self.buffers.iter() {
             if let Some(transform) = data.transform.get(*ent) {
@@ -180,15 +193,31 @@ impl<'a> System<'a> for Renderer {
                     projection: *main_camera.0.get_projection_matrix().as_ref()
                 };
 
-                frame
-                    .draw(
-                        &buffer.vertex,
-                        &buffer.index,
-                        &self.shader,
-                        &uniforms,
-                        &params,
-                    )
-                    .unwrap();
+                if let Some(index_buffer) = &buffer.index {
+                    frame
+                        .draw(
+                            &buffer.vertex,
+                            index_buffer,
+                            &self.shader,
+                            &uniforms,
+                            &self.draw_params,
+                        )
+                        .unwrap();
+                } else {
+                    if let Some(mesh) = data.mesh.get(*ent) {
+                        frame
+                            .draw(
+                                &buffer.vertex,
+                                glium::index::NoIndices(*mesh.get_index_type()),
+                                &self.shader,
+                                &uniforms,
+                                &self.draw_params,
+                            )
+                            .unwrap();
+                    } else {
+                        panic!("desync")
+                    }
+                }
             }
         }
         frame.finish().unwrap();

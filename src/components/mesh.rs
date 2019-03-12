@@ -10,7 +10,9 @@ pub type IndexType = u32;
 #[derive(Debug, Clone)]
 pub struct MeshData {
     points: Vec<glm::Vec3>,
-    indices: Vec<IndexType>,
+    normals: Vec<glm::Vec3>,
+    texture: Vec<glm::Vec2>,
+    indices: Option<Vec<IndexType>>,
     index_type: glium::index::PrimitiveType,
 }
 
@@ -23,7 +25,7 @@ impl MeshData {
         &self.points
     }
 
-    pub fn get_indices(&self) -> &Vec<IndexType> {
+    pub fn get_indices(&self) -> &Option<Vec<IndexType>> {
         &self.indices
     }
 
@@ -43,7 +45,7 @@ impl MeshData {
 
 pub fn cube(dims: (f32, f32, f32)) -> MeshData {
     // Points
-    let mut points = Vec::new();
+    let mut cube_points = Vec::new();
     for (i, j, k) in iproduct!(
         (-1..=1).step_by(2),
         (-1..=1).step_by(2),
@@ -54,9 +56,8 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
             j as f32 * (dims.1 / 2.0),
             k as f32 * (dims.2 / 2.0),
         );
-        points.push(point);
+        cube_points.push(point);
     }
-    let mut indices: Vec<IndexType> = Vec::new();
     // Faces
     let mut sides = [[[0; 4]; 2]; 3];
 
@@ -75,17 +76,23 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
         }
     }
     // Triangulation
+    let mut points = Vec::new();
+    let mut normals = Vec::new();
+    let mut texture = Vec::new();
     for side_pair in sides.iter() {
         for side in side_pair.iter() {
             for (o, i) in iproduct!(0..=1, 0..3) {
-                indices.push(side[i + o] as IndexType);
+                let index = side[o + i];
+                points.push(cube_points[index]);
             }
         }
     }
 
     MeshData {
         points,
-        indices,
+        normals,
+        texture,
+        indices: None,
         index_type: glium::index::PrimitiveType::TrianglesList,
     }
 }
@@ -114,9 +121,13 @@ pub fn sphere(radius: f32, segments: u16) -> MeshData {
         }
     }
 
+    let mut normals = Vec::new();
+    let mut texture = Vec::new();
     MeshData {
         points,
-        indices,
+        normals,
+        texture,
+        indices: Some(indices),
         index_type: glium::index::PrimitiveType::TrianglesList,
     }
 }
