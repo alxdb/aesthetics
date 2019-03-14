@@ -25,6 +25,14 @@ impl MeshData {
         &self.points
     }
 
+    pub fn get_normals(&self) -> &Vec<glm::Vec3> {
+        &self.normals
+    }
+
+    pub fn get_tex_coords(&self) -> &Vec<glm::Vec2> {
+        &self.texture
+    }
+
     pub fn get_indices(&self) -> &Option<Vec<IndexType>> {
         &self.indices
     }
@@ -43,24 +51,17 @@ impl MeshData {
     }
 }
 
-pub fn cube(dims: (f32, f32, f32)) -> MeshData {
+pub fn cube(dims: glm::Vec3) -> MeshData {
     // Points
     let mut cube_points = Vec::new();
-    for (i, j, k) in iproduct!(
-        (-1..=1).step_by(2),
-        (-1..=1).step_by(2),
-        (-1..=1).step_by(2)
-    ) {
-        let point = glm::vec3(
-            i as f32 * (dims.0 / 2.0),
-            j as f32 * (dims.1 / 2.0),
-            k as f32 * (dims.2 / 2.0),
-        );
+    for (i, j, k) in iproduct!([-1, 1].iter(), [-1, 1].iter(), [-1, 1].iter()) {
+        let point = glm::vec3(*i as f32, *j as f32, *k as f32);
         cube_points.push(point);
     }
     // Faces
     let mut sides = [[[0; 4]; 2]; 3];
 
+    let mut cube_textures = Vec::new();
     for (dim, side_pair) in sides.iter_mut().enumerate() {
         for (i, side) in side_pair.iter_mut().enumerate() {
             for ((j, k), s) in iproduct!(0..=1, 0..=1).zip(side.iter_mut()) {
@@ -72,6 +73,7 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
                         "something has gone terribly wrong, this is not a 4 dimensional universe"
                     ),
                 }
+                cube_textures.push(glm::vec2(j as f32, k as f32));
             }
         }
     }
@@ -79,12 +81,21 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
     let mut points = Vec::new();
     let mut normals = Vec::new();
     let mut texture = Vec::new();
-    for side_pair in sides.iter() {
+    for (dim, side_pair) in sides.iter().enumerate() {
+        let mut normal = match dim {
+            0 => -glm::Vec3::z(),
+            1 => -glm::Vec3::y(),
+            2 => -glm::Vec3::x(),
+            _ => panic!("oh no..."),
+        };
         for side in side_pair.iter() {
             for (o, i) in iproduct!(0..=1, 0..3) {
                 let index = side[o + i];
-                points.push(cube_points[index]);
+                points.push(dims.component_mul(&cube_points[index]) / 2.0);
+                texture.push(cube_textures[index]);
+                normals.push(normal);
             }
+            normal = normal * -1.0;
         }
     }
 
@@ -100,12 +111,16 @@ pub fn cube(dims: (f32, f32, f32)) -> MeshData {
 pub fn sphere(radius: f32, segments: u16) -> MeshData {
     // Points
     let mut points = Vec::new();
+    let mut normals = Vec::new();
+    let mut texture = Vec::new();
     use std::f32::consts;
     for (u, v) in iproduct!(0..=segments, 0..=segments) {
         let norm_coord = glm::vec2(u as f32, v as f32) / segments as f32;
         let (azi, pol) = (norm_coord.x * consts::PI * 2.0, norm_coord.y * consts::PI);
         let point = glm::vec3(pol.sin() * azi.cos(), pol.sin() * azi.sin(), pol.cos());
         points.push(point * radius);
+        normals.push(point);
+        texture.push(norm_coord);
     }
 
     let mut indices: Vec<IndexType> = Vec::new();
@@ -121,8 +136,6 @@ pub fn sphere(radius: f32, segments: u16) -> MeshData {
         }
     }
 
-    let mut normals = Vec::new();
-    let mut texture = Vec::new();
     MeshData {
         points,
         normals,

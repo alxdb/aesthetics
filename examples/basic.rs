@@ -66,19 +66,20 @@ fn main() {
         //     aspect: init_window_size.0 as f32 / init_window_size.1 as f32,
         // })
         .with(Transform {
-            // pos: glm::vec3(0.0, std::f32::consts::SQRT_2, std::f32::consts::SQRT_2),
-            // rot: glm::quat_look_at(&glm::vec3(0.0, 1.0, -1.0), &glm::vec3(0.0, 1.0, 0.0)),
-            pos: glm::vec3(0.0, 0.0, 0.0),
-            rot: glm::Quat::identity(),
+            pos: glm::vec3(0.0, std::f32::consts::SQRT_2, std::f32::consts::SQRT_2),
+            rot: glm::quat_look_at(&glm::vec3(0.0, 1.0, -1.0), &glm::vec3(0.0, 1.0, 0.0)),
+            // pos: glm::vec3(0.0, 0.0, 0.0),
+            // rot: glm::Quat::identity(),
             // rot: glm::quat_angle_axis(glm::half_pi(), &glm::vec3(0.0, 1.0, 0.0)),
         })
         .build();
+
     for (i, j, k) in iproduct!(
         (-1..=1).step_by(2),
         (-1..=1).step_by(2),
         (-1..=1).step_by(2)
     ) {
-        let cube_dims = (0.3, 0.3, 0.3);
+        let cube_dims = glm::vec3(0.3, 0.3, 0.3);
         world
             .create_entity()
             .with(mesh::cube(cube_dims))

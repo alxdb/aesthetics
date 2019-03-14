@@ -4,6 +4,7 @@ use components::{
 };
 
 use glium::{implement_vertex, uniform, IndexBuffer, VertexBuffer};
+use itertools::izip;
 use shred_derive::SystemData;
 use specs::prelude::*;
 
@@ -21,15 +22,22 @@ pub struct RendererData<'a> {
 #[derive(Copy, Clone, Debug)]
 struct Vertex {
     pos: [f32; 4],
+    nrm: [f32; 4],
+    tex: [f32; 2],
 }
-implement_vertex!(Vertex, pos);
+implement_vertex!(Vertex, pos, nrm, tex);
 
 fn make_vertices(mesh: &MeshData) -> Vec<Vertex> {
     let mut vertices = Vec::new();
-    for point in mesh.get_points() {
+    for (point, normal, tex_coord) in
+        izip!(mesh.get_points(), mesh.get_normals(), mesh.get_tex_coords())
+    {
         let point_four = point.fixed_resize::<nalgebra_glm::U4, nalgebra_glm::U1>(1.0);
+        let normal_four = normal.fixed_resize::<nalgebra_glm::U4, nalgebra_glm::U1>(0.0);
         vertices.push(Vertex {
             pos: *point_four.as_ref(),
+            nrm: *normal_four.as_ref(),
+            tex: *tex_coord.as_ref(),
         })
     }
     vertices
