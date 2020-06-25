@@ -13,5 +13,5 @@ void main() {
   vec4 light_dir = normalize(vec4(0.0, 1.0, 1.0, 0.0));
   float illum = max(dot(v_nrm, light_dir), 0.0);
   vec4 diffuse = illum * light_col;
-	color = diffuse * vec4(v_col, 1.0);
+  color = diffuse * vec4(v_col, 1.0);
 }
