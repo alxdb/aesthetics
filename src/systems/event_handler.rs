@@ -74,7 +74,7 @@ impl EventHandler {
                 glutin::ElementState::Released => {
                     if let Some(v_keycode) = key.virtual_keycode {
                         if !data.input_state.key_state.remove(&v_keycode) {
-                            panic!("keyboard desync release");
+                            eprintln!("keyboard desync release");
                         }
                     }
                 }
